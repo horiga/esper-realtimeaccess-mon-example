@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.2.xsd"
+>
+	<bean id="epServiceProvider" class="org.horiga.study.test.eventprocessing.esper.spring.SimpleEPServiceProviderFactory">
+		<property name="eventTypePackageName" value="org.horiga.study.test.eventprocessing.esper.event" />
+		<property name="statement">
+			<list>
+				<bean class="org.horiga.study.test.eventprocessing.esper.statement.EPStatementContextImpl" >
+					<property name="epl" value="select app, os, region, count(distinct userHash) as val from AccessEvent.win:time_batch(#{application['access.batch.epl.interval']} sec) group by app, os, region" />
+					<property name="listeners">
+						<list>
+							<bean class="org.horiga.study.test.eventprocessing.esper.listener.EPAccessEventListener" />
+						</list>
+					</property>
+				</bean>
+				<bean class="org.horiga.study.test.eventprocessing.esper.statement.EPStatementContextImpl">
+					<property name="epl" value="select * from TimedRtaEvent match_recognize ( partition by app measures A as access1, B as access2, C as access3 pattern (A B C)  define A as A.access > #{application['access.warning.epl.minThreshold']}, B as (A.access > B.access), C as (B.access > C.access) and A.access > (C.access * #{application['access.warning.epl.warningRatio']}))" />
+					<property name="subscriber" >
+						<bean class="org.horiga.study.test.eventprocessing.esper.subscriber.WarningRtaDownUpdateSubscriber" />
+					</property>
+				</bean>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="esperAccessEventHandler" class="org.horiga.study.test.eventprocessing.esper.EsperAccessEventHandler" />
+	
+	
+</beans>
