@@ -32,7 +32,7 @@ public class TimedRtaEvent {
 
 ```sql
   select app, os, region, count(distinct userHash) as val 
-  from AccessEvent.win:time_batch(${interval} sec) 
+  from AccessEvent.win:time_batch({interval} sec) 
   group by app, os, region
 ```
 
@@ -44,9 +44,9 @@ select * from TimedRtaEvent
     partition by app 
     measures A as access1, B as access2, C as access3 
     pattern (A B C)  
-    define A as A.access > ${minAccessThresHold}, 
+    define A as A.access > {minAccessThresHold}, 
            B as (A.access > B.access), 
-           C as (B.access > C.access) and A.access > (C.access * ${ratio}))
+           C as (B.access > C.access) and A.access > (C.access * {ratio}))
 ```
 
 
